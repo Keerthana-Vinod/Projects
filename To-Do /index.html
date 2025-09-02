@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List</title>
+    <!-- Use Tailwind CSS for a modern, responsive design -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #e2e8f0;
+        }
+        .task-done {
+            text-decoration: line-through;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-xl">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Your To-Do List</h1>
+        
+        <div class="flex space-x-2 mb-4">
+            <input 
+                id="task-input" 
+                type="text" 
+                class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all" 
+                placeholder="Add a new task..."
+            >
+            <button 
+                id="add-button" 
+                class="px-5 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+                Add
+            </button>
+        </div>
+        
+        <div class="bg-gray-50 p-4 rounded-lg shadow-inner">
+            <ul id="task-list" class="space-y-3">
+                <!-- Tasks will be added here dynamically -->
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Get references to the UI elements
+        const taskInput = document.getElementById('task-input');
+        const addButton = document.getElementById('add-button');
+        const taskList = document.getElementById('task-list');
+
+        // Function to create and add a new task element
+        function addTask(taskText, isCompleted = false) {
+            if (!taskText.trim()) {
+                // Show a simple warning message instead of an alert
+                showMessage("Task cannot be empty!", "warning");
+                return;
+            }
+
+            // Create a new list item
+            const listItem = document.createElement('li');
+            listItem.className = "flex items-center bg-white p-4 rounded-lg shadow-sm border border-gray-200 transition-all hover:shadow-md";
+
+            // Create the task text span
+            const taskSpan = document.createElement('span');
+            taskSpan.textContent = taskText;
+            taskSpan.className = "flex-1 text-gray-800 text-lg";
+
+            // Check if the task is already completed
+            if (isCompleted) {
+                taskSpan.classList.add('task-done');
+            }
+
+            // Create the action button container
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = "flex space-x-2";
+
+            // Create the complete button
+            const completeButton = document.createElement('button');
+            completeButton.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-500 hover:text-green-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>`;
+            completeButton.className = "p-1 rounded-full hover:bg-green-100 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500";
+            completeButton.onclick = () => {
+                taskSpan.classList.toggle('task-done');
+                saveTasks();
+            };
+
+            // Create the delete button
+            const deleteButton = document.createElement('button');
+            deleteButton.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-500 hover:text-red-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>`;
+            deleteButton.className = "p-1 rounded-full hover:bg-red-100 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500";
+            deleteButton.onclick = () => {
+                listItem.remove();
+                saveTasks();
+            };
+
+            // Append buttons to the actions container
+            actionsDiv.appendChild(completeButton);
+            actionsDiv.appendChild(deleteButton);
+
+            // Append all elements to the list item
+            listItem.appendChild(taskSpan);
+            listItem.appendChild(actionsDiv);
+
+            // Add the new item to the list
+            taskList.appendChild(listItem);
+        }
+
+        // Function to show a message (replaces alert)
+        function showMessage(message, type) {
+            const messageBox = document.createElement('div');
+            messageBox.className = "fixed bottom-5 left-1/2 -translate-x-1/2 p-4 rounded-lg shadow-lg text-white font-bold text-center z-50 transition-all duration-300 transform";
+            
+            if (type === "warning") {
+                messageBox.style.backgroundColor = "#e74c3c";
+            } else if (type === "info") {
+                messageBox.style.backgroundColor = "#3498db";
+            }
+
+            messageBox.textContent = message;
+            document.body.appendChild(messageBox);
+
+            // Automatically hide the message after 3 seconds
+            setTimeout(() => {
+                messageBox.style.opacity = '0';
+                setTimeout(() => messageBox.remove(), 500);
+            }, 3000);
+        }
+
+        // Add task when the "Add" button is clicked
+        addButton.addEventListener('click', () => {
+            const taskText = taskInput.value;
+            addTask(taskText);
+            taskInput.value = ''; // Clear the input field
+            saveTasks();
+        });
+
+        // Add task when the "Enter" key is pressed in the input field
+        taskInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault(); // Prevents a new line in some browsers
+                addButton.click();
+            }
+        });
+
+        // Function to save tasks to local storage
+        function saveTasks() {
+            const tasks = [];
+            document.querySelectorAll('#task-list li').forEach(item => {
+                const taskText = item.querySelector('span').textContent;
+                const isCompleted = item.querySelector('span').classList.contains('task-done');
+                tasks.push({ text: taskText, completed: isCompleted });
+            });
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+        }
+
+        // Function to load tasks from local storage on page load
+        function loadTasks() {
+            const storedTasks = localStorage.getItem('tasks');
+            if (storedTasks) {
+                const tasks = JSON.parse(storedTasks);
+                tasks.forEach(task => {
+                    addTask(task.text, task.completed);
+                });
+            }
+        }
+
+        // Load tasks when the page is fully loaded
+        document.addEventListener('DOMContentLoaded', loadTasks);
+
+    </script>
+</body>
+</html>
